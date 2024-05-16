@@ -10,7 +10,7 @@ Most LLM frameworks try to lock you into their ecosystem, which is problematic f
 - Inflexibility: Integrating other libraries or frameworks becomes difficult due to hidden dependencies and incompatibilities. You need an agnostic way to use LLMs regardless of the underlying implementation.
 - TDD-first: When working with LLMs, it's essential to ensure the results are adequate. This means adopting a defensive coding approach. However, no existing framework treats this as a core value.
 - Evaluation: Comparing different runs after modifying your model, prompt, or interaction method is crucial. Current frameworks fall short here (yes, langsmith), often pushing vendor lock-in with their SaaS products.
-- 
+
 ### Features
 - LLM/API-agnostic
 - Track Costs
