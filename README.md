@@ -109,8 +109,8 @@ They are just json files like so:
 You could compare tackings with our CLI *TBD*.
 
 TODO:
-- Think about comparing tackings
-- Think about tracking agents
+- Write the actual code :)
+- TS version?
 - Think about cli utitilies for improveing prompts from the trackings.
 - Think of ways to compare different models and prompts in a matrix style for best results using the eval values.
 - Github action for eval and results.
