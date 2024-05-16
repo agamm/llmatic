@@ -72,7 +72,8 @@ t.end(model=model, prompt=prompt, response=response) # Save the cost (inputs/out
 
 # Eval
 t.eval("Was the story between 300-400 words?", scale=(0,1))
-t.conditional_retry(lambda score: score > 0, scale=(0,1), max_retry=3) # If our condition isn't met, retry the llm again
+t.eval("Is the story creative?", scale=(0,10), "claude-sonnet")
+t.conditional_retry(lambda score: score > 7, scale=(0,10), max_retry=3) # If our condition isn't met, retry the llm again
 ```
 
 ### Results (e.g. LangSmith killer)
@@ -89,19 +90,6 @@ Will produce something like:
 
 
 ### Track format
-Tracked information is stored in JSON files like so:
-```
-response = openai.Completion.create(
-    engine=model,
-    prompt=prompt,
-    max_tokens=max_tokens,
-    n=1,
-    stop=None,
-    temperature=0.7
-)
-t.conditional_retry(lambda score: score < 7, normalize_score=(0,10)) # will call the completion again if the evals don't pass our threshold
-
-```
 
 What do trackings look like?
 They are just json files like so:
