@@ -72,7 +72,7 @@ t.end(model=model, prompt=prompt, response=response) # Save the cost (inputs/out
 
 # Eval
 t.eval("Was the story between 300-400 words?", scale=(0,1))
-t.conditional_retry(lambda score: score > 7, scale=(0,10), max_retry=3) # If our condition isn't met, retry the llm again
+t.conditional_retry(lambda score: score > 0, scale=(0,1), max_retry=3) # If our condition isn't met, retry the llm again
 ```
 
 ### Results (e.g. LangSmith killer)
