@@ -1,5 +1,5 @@
 # llm-utils
-No BS utitilies for developing with LLMs
+No BS utilities for developing with LLMs
 
 
 ### Why?
@@ -21,7 +21,7 @@ Most LLM frameworks try to lock you into their ecosystem, which is problematic f
 
 ### Examples
 
-Calling an LLM (notice how you can call what ever LLM api you want, you're really free to do as you please).
+Calling an LLM (notice how you can call whatever LLM API you want, you're really free to do as you please).
 ```py
 import openai
 from llmutils import track, get_response, retry, condition
@@ -49,14 +49,14 @@ t.eval("Is the story engaging?", scale=(0,10), "claude-sonnet")
 t.eval("Does the story contain the words ['water', 'flowers', 'soil']", scale=(0,10)) # This will use function calling to check "flowers" in story_text_response.
 t.eval("Did the response complete in less than 0.5s?", scale=(0,1), log_only=True) # This will not trigger a conditional_retry, just log/track the eval 
 t.eval("Was the story between 300-400 words?", scale=(0,1))
-t.conditional_retry(lambda score: score < 7, normalize_score=(0,10)) # will call the completion again if the evals don't pass our threashold
+t.conditional_retry(lambda score: score < 7, normalize_score=(0,10)) # will call the completion again if the evals don't pass our threshold
 
 # Extract and print the generated text
 generated_text = get_response(response) # equivallent to response.choices[0].text.strip()
 print(generated_text)
 ```
 
-How do trackings look like?
+What do trackings look like?
 They are just json files like so:
 ```json
 {
@@ -71,7 +71,7 @@ They are just json files like so:
   "created_at": ...
 }
 ```
-You could comapre tackings with our CLI.
+You could compare tackings with our CLI *TBD*.
 
 TODO:
 - Think about comparing tackings
