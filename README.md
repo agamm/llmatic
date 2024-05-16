@@ -24,23 +24,18 @@ Most LLM frameworks try to lock you into their ecosystem, which is problematic f
 Calling an LLM (notice how you can call whatever LLM API you want, you're really free to do as you please).
 ```py
 import openai
-from llmutils import track, get_response, retry, condition
-
-# Define the prompt and parameters
-prompt = "Write a short story about a robot learning to garden, 300-400 words, be creative."
-model = "gpt-4" 
+from llmutils import track, get_response
 
 # Make the API call
 t = track(id="story") # llm utils, start tacking an llm call, saved as json files.
-with retry(retries=3): # llm utils retry
-  response = openai.Completion.create(
-      engine=model,
-      prompt=prompt,
-      max_tokens=max_tokens,
-      n=1,
-      stop=None,
-      temperature=0.7
-  )
+response = openai.Completion.create(
+    engine="gpt-4",
+    prompt="Write a short story about a robot learning to garden, 300-400 words, be creative.",
+    max_tokens=max_tokens,
+    n=1,
+    stop=None,
+    temperature=0.7
+)
 t.end(model=model, prompt=prompt, response=response) # Save the cost (inputs/outputs), latency (execution time)
 
 # Evaluation
@@ -49,11 +44,50 @@ t.eval("Is the story engaging?", scale=(0,10), "claude-sonnet")
 t.eval("Does the story contain the words ['water', 'flowers', 'soil']", scale=(0,10)) # This will use function calling to check "flowers" in story_text_response.
 t.eval("Did the response complete in less than 0.5s?", scale=(0,1), log_only=True) # This will not trigger a conditional_retry, just log/track the eval 
 t.eval("Was the story between 300-400 words?", scale=(0,1))
-t.conditional_retry(lambda score: score < 7, normalize_score=(0,10)) # will call the completion again if the evals don't pass our threshold
 
 # Extract and print the generated text
 generated_text = get_response(response) # equivallent to response.choices[0].text.strip()
 print(generated_text)
+```
+
+What about retries, and managing our LLM calls?
+Well, we will need to take our relationship to the next level :)
+
+To get the most benefit from llm-utils, we need to wrap all of the relevant LLM calls with a context (`with llm(...)`):
+```py
+import openai
+from llmutils import track, get_response, llm, condition
+
+# Make the API call
+t = track(id="story") # llm utils, start tacking an llm call, saved as json files.
+with llm(retries=3, tracker=t): # This will also retry any rate limit errors 
+  response = openai.Completion.create(
+      engine="gpt-4",
+      prompt="Write a short story about a robot learning to garden, 300-400 words, be creative.",
+      max_tokens=max_tokens,
+      n=1,
+      stop=None,
+      temperature=0.7
+  )
+t.end(model=model, prompt=prompt, response=response) # Save the cost (inputs/outputs), latency (execution time)
+
+# Eval
+t.eval("Was the story between 300-400 words?", scale=(0,1))
+t.conditional_retry(lambda score: score > 7, scale=(0,10), max_retry=3) # If our condition isn't met, retry the llm again
+```
+
+Track format:
+```
+response = openai.Completion.create(
+    engine=model,
+    prompt=prompt,
+    max_tokens=max_tokens,
+    n=1,
+    stop=None,
+    temperature=0.7
+)
+t.conditional_retry(lambda score: score < 7, normalize_score=(0,10)) # will call the completion again if the evals don't pass our threshold
+
 ```
 
 What do trackings look like?
