@@ -1,7 +1,9 @@
 import json
 import time
 import traceback
+from decimal import Decimal
 from pathlib import Path
+from tokencost import calculate_prompt_cost, calculate_completion_cost, count_string_tokens
 
 class Track:
     def __init__(self, id: str):
@@ -38,6 +40,22 @@ class Track:
         self.input = prompt
         self.output = response
         self.model = model
+
+        # Calculate token costs and count
+        prompt_cost = calculate_prompt_cost(prompt, model)
+        completion_cost = calculate_completion_cost(response["choices"][0]["text"], model)
+        prompt_tokens = count_string_tokens(prompt, model)
+        completion_tokens = count_string_tokens(response["choices"][0]["text"], model)
+
+        self.cost = {
+            "prompt_cost": float(prompt_cost),
+            "completion_cost": float(completion_cost),
+            "total_cost": float(prompt_cost + completion_cost),
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": prompt_tokens + completion_tokens
+        }
+
         self._save()
 
     def _save(self):
@@ -49,7 +67,8 @@ class Track:
             "eval_results": self.eval_results,
             "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             "file_path": str(self.save_file),
-            "model": self.model
+            "model": self.model,
+            "cost": self.cost
         }
         with open(self.save_file, "w") as f:
             json.dump(data, f, indent=4)

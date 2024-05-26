@@ -70,7 +70,8 @@ def format_output(data, file_path):
     print(f"Prompt: {click.style(prompt_text, fg='yellow')}")
     execution_time = data['execution_time_ms']
     print(f"Execution Time: {click.style(f'{execution_time} ms', fg=exec_time_color)}")
-    print("Total Cost: N/A")
+    print("Total Cost: ${:.6f}".format(data['cost']['total_cost']))
+    print(f"Tokens: {data['cost']['total_tokens']} (Prompt: {data['cost']['prompt_tokens']}, Completion: {data['cost']['completion_tokens']})")
     print(f"Tracking File Path: {click.style(str(file_path), fg='yellow')}")
     print()
     print(click.style("Evaluation Results:", fg="cyan"))
@@ -78,7 +79,7 @@ def format_output(data, file_path):
     for eval_name, eval_result in data.get('eval_results', {}).items():
         scale_basis = eval_result['scale'][0]
         scale = eval_result['scale'][1]
-        print(f"{eval_name}: {click.style(f'{scale_basis} / {scale}', fg='green')} (N/A)")
+        print(f"{eval_name}: {click.style(f'{scale} / {scale_basis}', fg='green')} (N/A)")
     print()
     print(click.style("Generated Text:", fg="cyan"))
     print(click.style("-" * 60, fg="yellow"))
