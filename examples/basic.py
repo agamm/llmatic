@@ -13,7 +13,7 @@ mock_openai.Completion.create.return_value = mock_response
 t = Track(id="story", project_id="test01")  # start tracking an LLM call, saved as JSON files.
 
 # Simulate a delay to mock the execution time
-time.sleep(0.4)
+time.sleep(0.7)
 
 # Mock the LLM call
 response = mock_openai.Completion.create(

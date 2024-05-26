@@ -16,8 +16,9 @@ class Track:
         self.start_time = time.time()
         self.input = None
         self.output = None
-        self.eval_results = {}
+        self.eval_results = []
         self.model = None
+        self.created_at = time.strftime("%Y-%m-%d %H:%M:%S")
         
         # Get the caller's file and function name from the call stack
         stack = traceback.extract_stack()
@@ -30,9 +31,9 @@ class Track:
         if caller:
             # Get the relative path from the project root
             relative_path = Path(caller.filename).relative_to(Path.cwd())
-            file_func = f"{relative_path.with_suffix('')}_{caller.name}".replace("/", "_").replace("\\", "_")
+            self.file_func = f"{relative_path.with_suffix('')}_{caller.name}".replace("/", "_").replace("\\", "_")
         else:
-            file_func = "unknown"
+            self.file_func = "unknown"
 
     def end(self, model: str, prompt: str, response):
         self.end_time = time.time()
@@ -56,34 +57,64 @@ class Track:
             "total_tokens": prompt_tokens + completion_tokens
         }
 
-        self._save()
+        self._save_initial()
 
-    def _save(self):
+    def _save_initial(self):
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         cursor.execute('''
             INSERT INTO trackings (
                 project_id, tracking_id, execution_time_ms, input, output, eval_results, created_at, model,
-                prompt_cost, completion_cost, total_cost, prompt_tokens, completion_tokens, total_tokens
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                prompt_cost, completion_cost, total_cost, prompt_tokens, completion_tokens, total_tokens, file_func
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (
             self.project_id, self.id, self.execution_time_ms, self.input, json.dumps(self.output), json.dumps(self.eval_results),
-            time.strftime("%Y-%m-%d %H:%M:%S"), self.model,
+            self.created_at, self.model,
             self.cost["prompt_cost"], self.cost["completion_cost"], self.cost["total_cost"],
-            self.cost["prompt_tokens"], self.cost["completion_tokens"], self.cost["total_tokens"]
+            self.cost["prompt_tokens"], self.cost["completion_tokens"], self.cost["total_tokens"], self.file_func
         ))
         conn.commit()
         conn.close()
 
-    def eval(self, description: str, scale: tuple, model: str = None, log_only: bool = False, dev_mode: bool = False):
+    def _save_eval(self):
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            UPDATE trackings SET
+                eval_results = ?
+            WHERE project_id = ? AND tracking_id = ? AND created_at = ?
+        ''', (
+            json.dumps(self.eval_results), self.project_id, self.id, self.created_at
+        ))
+        conn.commit()
+        conn.close()
+
+    def eval(self, description: str, scale: tuple, model: str = None, eval_function=None, log_only: bool = False, dev_mode: bool = False):
         if dev_mode:
             return
-        self.eval_results[description] = {
+        
+        score = 0
+        if eval_function:
+            score = eval_function(self.output)
+        else:
+            # Mock LLM evaluation (use actual LLM call here in the future)
+            score = self.mock_llm_evaluation(description, self.output, model)
+
+        scaled_score = (score / scale[1]) * 10  # Scale the score to be out of 10
+
+        self.eval_results.append({
+            "description": description,
+            "score": scaled_score,
             "scale": scale,
-            "model": model,
-            "log_only": log_only
-        }
-        self._save()
+            "log_only": log_only,
+            "model": model
+        })
+        self._save_eval()
+
+    def mock_llm_evaluation(self, description, response, model):
+        # Mock evaluation logic based on the model
+        # Here you can add logic to return different scores based on the model if needed
+        return 7  # Mock score
 
 def get_response(response):
     return response["choices"][0]["text"].strip()

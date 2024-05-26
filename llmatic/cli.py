@@ -46,12 +46,35 @@ def show(project_id, tracking_id):
 @click.argument("project_id")
 def remove(project_id):
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
     cursor.execute('DELETE FROM trackings WHERE project_id = ?', (project_id,))
     conn.commit()
     conn.close()
     print(f"Removed all tracking files for project: {project_id}")
+
+@main.command()
+@click.argument("project_id")
+def summary(project_id):
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM trackings WHERE project_id = ? ORDER BY created_at ASC
+    ''', (project_id,))
+    trackings = cursor.fetchall()
+    conn.close()
+    if trackings:
+        print(f"Run summary for project: {project_id}")
+        print(click.style("-" * 60, fg="yellow"))
+        for tracking in trackings:
+            tracking_id = tracking['tracking_id']
+            model = tracking['model']
+            exec_time = tracking['execution_time_ms'] / 1000
+            total_cost = tracking['total_cost']
+            file_func = tracking['file_func']
+            print(f"{tracking_id} - [{model}], {exec_time:.2f}s, ${total_cost:.6f}, {file_func}")
+    else:
+        print(f"No trackings found for project: {project_id}")
 
 def format_output(tracking):
     exec_time_color = "red" if tracking["execution_time_ms"] > 500 else "green"
@@ -63,6 +86,7 @@ def format_output(tracking):
     print(click.style("-" * 60, fg="yellow"))
     print(f"Tracking ID: {click.style(tracking['tracking_id'], fg='red')}")
     print(f"Model: {click.style(tracking['model'], fg='yellow')}")
+    print(f"File and Function: {click.style(tracking['file_func'], fg='blue')}")
     prompt_text = f"\"{tracking['input']}\""
     print(f"Prompt: {click.style(prompt_text, fg='yellow')} (Cost: ${prompt_cost:.6f})")
     execution_time = tracking["execution_time_ms"]
@@ -74,10 +98,11 @@ def format_output(tracking):
     print(click.style("Evaluation Results:", fg="cyan"))
     print(click.style("-" * 60, fg="yellow"))
     eval_results = json.loads(tracking["eval_results"])
-    for eval_name, eval_result in eval_results.items():
-        scale_basis = eval_result['scale'][0]
-        scale = eval_result['scale'][1]
-        print(f"{eval_name}: {click.style(f'{scale} / {scale_basis}', fg='green')} (N/A)")
+    for eval in eval_results:
+        description = eval["description"]
+        score = eval["score"]
+        model = eval["model"]
+        print(f"{description} (Model: {model}): {click.style(f'{score:.2f}', fg='green')}")
     print()
     print(click.style("Generated Text:", fg="cyan"))
     print(click.style("-" * 60, fg="yellow"))

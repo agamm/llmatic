@@ -22,7 +22,9 @@ def init_db():
             total_cost REAL,
             prompt_tokens INTEGER,
             completion_tokens INTEGER,
-            total_tokens INTEGER
+            total_tokens INTEGER,
+            file_func TEXT,
+            UNIQUE(project_id, tracking_id, created_at)
         )
     ''')
     conn.commit()
