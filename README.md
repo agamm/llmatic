@@ -1,4 +1,4 @@
-# llm-utils
+# llmatic
 **No BS utilities for developing with LLMs**
 
 ### Why?
@@ -16,10 +16,10 @@ So we are solving those problems exactly without any crazy vendor lock or abstra
 Calling an LLM (notice how you can call whatever LLM API you want, you're really free to do as you please).
 ```py
 import openai
-from llmutils import track, get_response
+from llmatic import track, get_response
 
 # Start tracking an LLM call
-t = track(id="story") # llm utils, start tacking an llm call, saved as json files.
+t = track(id="story") # start tacking an llm call, saved as json files.
 
 # Make the LLM call, note you can use whatever API or LLM you want.
 response = openai.Completion.create(
@@ -52,13 +52,13 @@ print(generated_text)
 ### Retries?
 Well, we will need to take our relationship to the next level :)
 
-To get the most benefit from llm-utils, we need to wrap all of the relevant LLM calls with a context (`with llm(...)`):
+To get the most benefit from llmatic, we need to wrap all of the relevant LLM calls with a context (`with llm(...)`):
 ```py
 import openai
-from llmutils import track, get_response, llm, condition
+from llmatic import track, get_response, llm, condition
 
 # Make the API call
-t = track(id="story") # llm utils, start tacking an llm call, saved as json files.
+t = track(id="story") # start tacking an llm call, saved as json files.
 with llm(retries=3, tracker=t): # This will also retry any rate limit errors 
   response = openai.Completion.create(
       engine="gpt-4",
@@ -79,14 +79,14 @@ t.conditional_retry(lambda score: score > 7, scale=(0,10), max_retry=3) # If our
 ### Results (e.g. LangSmith killer)
 We use a cli tool to check them out. By default tracking results will be saved under `$HOME/.llmutls/{track_id}/*.json`
 
-- List all trackings: `llmutils list`
-- Output the last track `llmutils show <id>` (id="story" in our last example)
+- List all trackings: `llmatic list`
+- Output the last track `llmatic show <id>` (id="story" in our last example)
 Will produce something like:
-![image](https://github.com/agamm/llm-utils/assets/1269911/9a81a173-6df3-4084-af78-86e18ef97d1b)
+![image](https://github.com/agamm/llmatic/assets/1269911/9a81a173-6df3-4084-af78-86e18ef97d1b)
 
 
-- Compare trackings: `llmutils compare <id> <id2>`
-![image](https://github.com/agamm/llm-utils/assets/1269911/f0c4485e-3e57-4c17-b2c9-732e27d4229a)
+- Compare trackings: `llmatic compare <id> <id2>`
+![image](https://github.com/agamm/llmatic/assets/1269911/f0c4485e-3e57-4c17-b2c9-732e27d4229a)
 
 
 ### Track format
