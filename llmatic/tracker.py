@@ -1,17 +1,23 @@
 import json
 import time
 import traceback
+import sqlite3
 from decimal import Decimal
 from pathlib import Path
 from tokencost import calculate_prompt_cost, calculate_completion_cost, count_string_tokens
+from .db import init_db, DB_PATH
+
+init_db()  # Ensure the database is initialized
 
 class Track:
-    def __init__(self, id: str):
+    def __init__(self, project_id: str, id: str):
+        self.project_id = project_id
         self.id = id
         self.start_time = time.time()
         self.input = None
         self.output = None
         self.eval_results = {}
+        self.model = None
         
         # Get the caller's file and function name from the call stack
         stack = traceback.extract_stack()
@@ -27,12 +33,6 @@ class Track:
             file_func = f"{relative_path.with_suffix('')}_{caller.name}".replace("/", "_").replace("\\", "_")
         else:
             file_func = "unknown"
-
-        time_str = time.strftime("%Y%m%d-%H%M%S")
-        self.save_path = Path.home() / ".llmatic" / self.id / time_str
-        self.save_file = self.save_path / f"{file_func}.json"
-        self.save_path.mkdir(parents=True, exist_ok=True)
-        self.model = None
 
     def end(self, model: str, prompt: str, response):
         self.end_time = time.time()
@@ -59,19 +59,21 @@ class Track:
         self._save()
 
     def _save(self):
-        data = {
-            "id": self.id,
-            "execution_time_ms": self.execution_time_ms,
-            "input": self.input,
-            "output": self.output,
-            "eval_results": self.eval_results,
-            "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "file_path": str(self.save_file),
-            "model": self.model,
-            "cost": self.cost
-        }
-        with open(self.save_file, "w") as f:
-            json.dump(data, f, indent=4)
+        conn = sqlite3.connect(DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute('''
+            INSERT INTO trackings (
+                project_id, tracking_id, execution_time_ms, input, output, eval_results, created_at, model,
+                prompt_cost, completion_cost, total_cost, prompt_tokens, completion_tokens, total_tokens
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (
+            self.project_id, self.id, self.execution_time_ms, self.input, json.dumps(self.output), json.dumps(self.eval_results),
+            time.strftime("%Y-%m-%d %H:%M:%S"), self.model,
+            self.cost["prompt_cost"], self.cost["completion_cost"], self.cost["total_cost"],
+            self.cost["prompt_tokens"], self.cost["completion_tokens"], self.cost["total_tokens"]
+        ))
+        conn.commit()
+        conn.close()
 
     def eval(self, description: str, scale: tuple, model: str = None, log_only: bool = False, dev_mode: bool = False):
         if dev_mode:
